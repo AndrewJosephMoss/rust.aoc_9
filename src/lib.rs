@@ -22,8 +22,9 @@ pub fn process_part_1(input: &str) -> usize {
     moves.iter().for_each(|mv| {
         let steps = get_move_steps(mv);
         let mv_delta = get_move_coord_delta(mv);
-        for i in 0..steps {
-            if move_knots(&mut lead, &mut tail, mv_delta) {
+        for _ in 0..steps {
+            lead = (lead.0 + mv_delta.0, lead.1 + mv_delta.1);
+            if move_connected_knots(&mut lead, &mut tail) {
                 uniq_pos.insert(tail.clone());
             }
         }
@@ -39,16 +40,27 @@ pub fn process_part_2(input: &str) -> usize {
 }
 
 /// Returns true if the tail knot moved.
-fn move_knots(lead: &mut (i16, i16), tail: &mut (i16, i16), mv_delta: (i16, i16)) -> bool {
-    let curr_lead = lead.clone();
-    lead.0 = lead.0 + mv_delta.0;
-    lead.1 = lead.1 + mv_delta.1;
+fn move_connected_knots(lead: &(i16, i16), tail: &mut (i16, i16)) -> bool{
     if !knots_are_touching(lead, tail) {
-        tail.0 = curr_lead.0;
-        tail.1 = curr_lead.1;
+        let pos_delta: (i16, i16) = (lead.0 - tail.0, lead.1 - tail.1);
+        if pos_delta.0.abs() >= 2 {
+            tail.1 = lead.1;
+            tail.0 = if pos_delta.0 > 0 {
+                lead.0 - 1
+            } else {
+                lead.0 + 1
+            }
+        } else {
+            tail.0 = lead.0;
+            tail.1 = if pos_delta.1 > 0 {
+                lead.1 - 1
+            } else {
+                lead.1 + 1
+            }
+        }
         return true;
     }
-    false
+    return false;
 }
 
 fn knots_are_touching(lead: &(i16, i16), tail: &(i16, i16)) -> bool {
@@ -108,34 +120,30 @@ mod tests {
     }
 
     #[test]
-    fn test_move_knots() {
+    fn test_move_connected_knots() {
         let mut lead: (i16, i16) = (0, 0);
         let mut tail = lead.clone();
-        let result = move_knots(&mut lead, &mut tail, (0, 1));
+        let result = move_connected_knots(&mut lead, &mut tail);
         assert!(!result);
-        assert_eq!(lead, (0, 1));
         assert_eq!(tail, (0, 0));
 
-        let mut lead: (i16, i16) = (0, 1);
+        let mut lead: (i16, i16) = (0, 2);
         let mut tail = (0, 0);
-        let result = move_knots(&mut lead, &mut tail, (0, 1));
+        let result = move_connected_knots(&mut lead, &mut tail);
         assert!(result);
-        assert_eq!(lead, (0, 2));
         assert_eq!(tail, (0, 1));
 
-        let mut lead: (i16, i16) = (-1, -1);
+        let mut lead: (i16, i16) = (-1, -2);
         let mut tail = (0, 0);
-        let result = move_knots(&mut lead, &mut tail, (0, -1));
+        let result = move_connected_knots(&mut lead, &mut tail);
         assert!(result);
-        assert_eq!(lead, (-1, -2));
         assert_eq!(tail, (-1, -1));
 
         let mut lead: (i16, i16) = (0, 1);
-        let mut tail = (1, 2);
-        let result = move_knots(&mut lead, &mut tail, (-1, 0));
+        let mut tail = (1, 3);
+        let result = move_connected_knots(&mut lead, &mut tail);
         assert!(result);
-        assert_eq!(lead, (-1, 1));
-        assert_eq!(tail, (0, 1));
+        assert_eq!(tail, (0, 2));
     }
 
     #[test]
