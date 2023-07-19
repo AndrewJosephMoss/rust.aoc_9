@@ -36,28 +36,55 @@ pub fn process_part_2(input: &str) -> usize {
     let mut rope: [(i16, i16); 10] = [(0, 0); 10];
     let mut uniq_pos = HashSet::<(i16, i16)>::from([(0, 0)]);
     let moves = get_moves(input);
-    todo!()
+    moves.iter().for_each(|mv| {
+        let steps = get_move_steps(mv);
+        let mv_delta = get_move_coord_delta(mv);
+        for _ in 0..steps {
+            rope[0] = (rope[0].0 + mv_delta.0, rope[0].1 + mv_delta.1);
+            for i in 0..rope.len() - 1 {
+                let (lead, tail) = rope.split_at_mut(i + 1);
+                if move_connected_knots(&mut lead[i], &mut tail[0]) {
+                    if i == rope.len() - 2 {
+                        uniq_pos.insert(rope[i + 1]);
+                    }
+                }
+            }
+            // println!("{:?}: {:?}", mv, rope);
+        }
+    });
+    uniq_pos.len()
 }
 
 /// Returns true if the tail knot moved.
 fn move_connected_knots(lead: &(i16, i16), tail: &mut (i16, i16)) -> bool{
     if !knots_are_touching(lead, tail) {
         let pos_delta: (i16, i16) = (lead.0 - tail.0, lead.1 - tail.1);
-        if pos_delta.0.abs() >= 2 {
+        if pos_delta.0.abs() >=2 && pos_delta.1.abs() >= 2 {
+            tail.0 = if lead.0 > tail.0 {
+                tail.0 + 1
+            } else {
+                tail.0 - 1
+            };
+            tail.1 = if lead.1 > tail.1 {
+                tail.1 + 1
+            } else {
+                tail.1 - 1
+            }
+        } else if pos_delta.0.abs() >= 2 {
             tail.1 = lead.1;
             tail.0 = if pos_delta.0 > 0 {
                 lead.0 - 1
             } else {
                 lead.0 + 1
-            }
+            };
         } else {
             tail.0 = lead.0;
             tail.1 = if pos_delta.1 > 0 {
                 lead.1 - 1
             } else {
                 lead.1 + 1
-            }
-        }
+            };
+        };
         return true;
     }
     return false;
@@ -117,6 +144,17 @@ mod tests {
         let input = fs::read_to_string("test-input.txt").unwrap();
         let result = process_part_1(&input);
         assert_eq!(result, 13);
+    }
+
+    #[test]
+    fn test_process_part_2() {
+        // let input = fs::read_to_string("test-input.txt").unwrap();
+        // let result = process_part_2(&input);
+        // assert_eq!(result, 1);
+
+        let input = fs::read_to_string("test-input2.txt").unwrap();
+        let result = process_part_2(&input);
+        assert_eq!(result, 36);
     }
 
     #[test]
